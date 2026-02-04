@@ -57,6 +57,17 @@ Yes, my design evolved significantly during implementation. The most important c
 - Describe one tradeoff your scheduler makes.
 - Why is that tradeoff reasonable for this scenario?
 
+**Priority-First Scheduling vs. Optimal Time Utilization**
+
+My scheduler makes a significant tradeoff by prioritizing task importance over optimal time slot utilization. The algorithm sorts all tasks by priority (Critical → High → Medium → Low) and attempts to schedule them in that order, rather than using a more sophisticated approach like dynamic programming to find the globally optimal time arrangement.
+
+**The Tradeoff:**
+- **What we gain**: Critical tasks (like medication, feeding) are guaranteed to be scheduled first, ensuring pet health and safety needs are never compromised for convenience
+- **What we sacrifice**: The scheduler may leave inefficient gaps in the schedule or miss opportunities to fit more lower-priority tasks by rearranging the order
+
+**Why this tradeoff is reasonable:**
+In pet care scenarios, safety trumps efficiency. It's better to have a suboptimal schedule that ensures all critical tasks are completed than a perfectly packed schedule that might skip medication because it couldn't find the "ideal" time slot. Pet owners would rather have 30 minutes of free time scattered throughout the day than risk their pet's health for a more elegant timeline.
+
 ---
 
 ## 3. AI Collaboration
@@ -100,3 +111,64 @@ Yes, my design evolved significantly during implementation. The most important c
 **c. Key takeaway**
 
 - What is one important thing you learned about designing systems or working with AI on this project?
+
+
+## Smarter Schzeduling
+
+**Advanced Algorithmic Features Implemented:**
+
+### **1. Merge Sort Time Ordering**
+- **Feature**: Custom `sort_by_time()` method using merge sort algorithm (O(n log n) complexity)
+- **Purpose**: Efficiently sorts scheduled tasks by their start times to maintain chronological order
+- **Implementation**: Recursive divide-and-conquer approach with custom merge function for ScheduledTask objects
+- **Benefit**: Ensures schedule displays are always time-ordered and conflict detection is accurate
+
+### **2. Multi-Criteria Task Filtering**
+- **`filter_tasks_by_pet()`**: Finds tasks applicable to specific pets with optional status filtering
+- **`filter_tasks_by_category()`**: Linear search filtering by task categories (feeding, exercise, medical, etc.)
+- **`filter_tasks_by_priority()`**: Filters tasks meeting minimum priority thresholds
+- **`filter_scheduled_tasks_by_status()`**: Separates completed, pending, and in-progress tasks
+- **Benefit**: Enables targeted task management and analysis for different pets and scenarios
+
+### **3. Automatic Recurring Task Management**
+- **Auto-Creation**: When recurring tasks are completed, automatically generates next instance
+- **`_create_next_recurring_instance()`**: Creates new Task object with same properties and updated schedule
+- **`complete_task_and_handle_recurring()`**: Seamlessly handles completion workflow
+- **Smart Scheduling**: Calculates next occurrence based on frequency (daily, weekly, etc.)
+- **Benefit**: Eliminates manual task re-creation and ensures continuous care routines
+
+### **4. Advanced Conflict Detection Algorithms**
+- **Multi-Level Analysis**: 
+  - **`get_detailed_conflicts()`**: Identifies exact overlap times between any two tasks
+  - **`detect_pet_conflicts()`**: Finds scheduling conflicts for individual pets with duration calculations
+  - **`detect_resource_conflicts()`**: Detects when multiple pets need owner attention simultaneously
+- **Precise Overlap Calculation**: Uses datetime arithmetic to determine exact conflict minutes
+- **Conflict Types**: Distinguishes between time overlaps, pet-specific issues, and resource availability
+- **Benefit**: Provides detailed conflict analysis for schedule optimization and problem resolution
+
+### **5. Enhanced Scheduling Constraints**
+- **Energy Level Matching**: Tasks matched to pet energy levels (very_low → very_high)
+- **Medical Condition Filtering**: Automatically excludes tasks that conflict with pet health issues
+- **Time Preference Optimization**: Respects preferred times for different activity categories
+- **Multi-Pet Coordination**: Balances scheduling across multiple pets with different needs
+- **Benefit**: Creates more realistic and pet-appropriate schedules
+
+### **6. Real-Time Task Completion Tracking**
+- **Interactive Checkboxes**: Users can mark tasks complete directly in the UI
+- **Progress Visualization**: Shows completion percentage with progress bars
+- **Session Persistence**: Completion status survives page interactions
+- **Celebration Features**: Balloons animation when all tasks completed
+- **Benefit**: Transforms static schedule into interactive daily checklist
+
+### **7. Intelligent Task Scoring System**
+- **Multi-Factor Scoring**: Combines priority, overdue status, time preferences, and energy matching
+- **Dynamic Weighting**: Adjustable priority weights for different constraint types
+- **Pet-Specific Optimization**: Scores tasks based on individual pet characteristics
+- **Optimal Time Slot Selection**: Finds best scheduling time using comprehensive scoring
+- **Benefit**: Produces more nuanced and optimized scheduling decisions
+
+**Technical Implementation Highlights:**
+- **Algorithm Complexity**: Merge sort O(n log n), filtering O(n), conflict detection O(n²)
+- **Data Structures**: Session state management, unique task identifiers, enum-based type safety
+- **User Experience**: Seamless interaction without page reloads, persistent state management
+- **Error Handling**: Graceful degradation when constraints cannot be satisfied

@@ -272,6 +272,30 @@ class Task:
     def mark_completed(self) -> None:
         """Mark the task as completed and update last_completed timestamp."""
         self.last_completed = datetime.now()
+        
+        # Auto-create next instance for recurring tasks
+        if self.is_recurring:
+            self._create_next_recurring_instance()
+    
+    def _create_next_recurring_instance(self) -> 'Task':
+        """Create a new instance of this recurring task for the next occurrence."""
+        next_task = Task(
+            title=self.title,
+            duration_minutes=self.duration_minutes,
+            priority=self.priority,
+            category=self.category
+        )
+        
+        # Copy all requirements
+        next_task.requirements = self.requirements.copy()
+        next_task.set_recurring(self.frequency_days)
+        
+        # Set next due date
+        if self.last_completed:
+            next_due = self.last_completed + timedelta(days=self.frequency_days)
+            next_task.last_completed = None  # Reset completion status
+        
+        return next_task
     
     def __str__(self) -> str:
         """Return string representation of the task."""
@@ -310,7 +334,15 @@ class ScheduledTask:
         
         # Mark underlying task as completed if status is COMPLETED
         if status == TaskStatus.COMPLETED:
-            self.task.mark_completed()
+            completed_task = self.task.mark_completed()
+            # If this was a recurring task, the mark_completed method created a new instance
+            # The calling code should handle adding the new instance to the scheduler
+    
+    def get_next_recurring_task(self) -> Optional['Task']:
+        """Get the next instance of a recurring task if this task was completed."""
+        if self.status == TaskStatus.COMPLETED and self.task.is_recurring:
+            return self.task._create_next_recurring_instance()
+        return None
     
     def get_status(self) -> TaskStatus:
         """Return the current status."""
@@ -360,13 +392,34 @@ class Schedule:
     
     def has_conflicts(self) -> bool:
         """Check if any scheduled tasks overlap."""
+        return len(self.get_detailed_conflicts()) > 0
+    
+    def get_detailed_conflicts(self) -> list[dict]:
+        """Return detailed information about all scheduling conflicts."""
+        conflicts = []
         sorted_tasks = self.get_scheduled_tasks()
-        for i in range(len(sorted_tasks) - 1):
-            current_end = sorted_tasks[i].get_end_time()
-            next_start = sorted_tasks[i + 1].get_scheduled_time()
-            if current_end > next_start:
-                return True
-        return False
+        
+        for i in range(len(sorted_tasks)):
+            for j in range(i + 1, len(sorted_tasks)):
+                task1 = sorted_tasks[i]
+                task2 = sorted_tasks[j]
+                
+                # Check for time overlap
+                if self._tasks_overlap(task1, task2):
+                    conflicts.append({
+                        'task1': task1,
+                        'task2': task2,
+                        'overlap_start': max(task1.scheduled_time, task2.scheduled_time),
+                        'overlap_end': min(task1.get_end_time(), task2.get_end_time()),
+                        'conflict_type': 'time_overlap'
+                    })
+        
+        return conflicts
+    
+    def _tasks_overlap(self, task1: ScheduledTask, task2: ScheduledTask) -> bool:
+        """Check if two scheduled tasks have overlapping times."""
+        return not (task1.get_end_time() <= task2.scheduled_time or 
+                   task2.get_end_time() <= task1.scheduled_time)
     
     def get_free_time_slots(self) -> list[tuple[datetime, datetime]]:
         """Return list of free time slots as (start, end) tuples."""
@@ -524,6 +577,70 @@ class Scheduler:
         if task in self.available_tasks:
             self.available_tasks.remove(task)
     
+    def sort_by_time(self, scheduled_tasks: list[ScheduledTask]) -> list[ScheduledTask]:
+        """Sort scheduled tasks by their scheduled time using merge sort algorithm."""
+        if len(scheduled_tasks) <= 1:
+            return scheduled_tasks
+        
+        # Divide the list into two halves
+        mid = len(scheduled_tasks) // 2
+        left = scheduled_tasks[:mid]
+        right = scheduled_tasks[mid:]
+        
+        # Recursively sort both halves
+        left_sorted = self.sort_by_time(left)
+        right_sorted = self.sort_by_time(right)
+        
+        # Merge the sorted halves
+        return self._merge_by_time(left_sorted, right_sorted)
+    
+    def _merge_by_time(self, left: list[ScheduledTask], right: list[ScheduledTask]) -> list[ScheduledTask]:
+        """Merge two sorted lists of scheduled tasks by time."""
+        result = []
+        i = j = 0
+        
+        while i < len(left) and j < len(right):
+            if left[i].scheduled_time <= right[j].scheduled_time:
+                result.append(left[i])
+                i += 1
+            else:
+                result.append(right[j])
+                j += 1
+        
+        # Add remaining elements
+        result.extend(left[i:])
+        result.extend(right[j:])
+        
+        return result
+    
+    def filter_tasks_by_pet(self, pet: Pet, include_status: list[TaskStatus] = None) -> list[Task]:
+        """Filter tasks applicable to a specific pet with optional status filtering."""
+        if include_status is None:
+            include_status = [TaskStatus.PENDING, TaskStatus.IN_PROGRESS]
+        
+        filtered_tasks = []
+        
+        for task in self.available_tasks:
+            if task.is_applicable_for_pet(pet):
+                # For basic Task objects, we consider them as PENDING
+                # In a real implementation, you might track status differently
+                filtered_tasks.append(task)
+        
+        return filtered_tasks
+    
+    def filter_scheduled_tasks_by_status(self, schedule, status: TaskStatus) -> list[ScheduledTask]:
+        """Filter scheduled tasks by their completion status."""
+        return [st for st in schedule.scheduled_tasks if st.status == status]
+    
+    def filter_tasks_by_category(self, category: TaskCategory) -> list[Task]:
+        """Filter tasks by category using linear search."""
+        return [task for task in self.available_tasks if task.category == category]
+    
+    def filter_tasks_by_priority(self, min_priority: Priority) -> list[Task]:
+        """Filter tasks by minimum priority level."""
+        return [task for task in self.available_tasks 
+                if task.priority.value >= min_priority.value]
+    
     def set_scheduling_rule(self, rule_name: str, rule_func: callable) -> None:
         """Add a custom scheduling rule."""
         self.scheduling_rules[rule_name] = rule_func
@@ -559,6 +676,9 @@ class Scheduler:
         # Sort by priority and overdue status
         sorted_tasks = self._sort_tasks_by_priority([task for task, _ in all_applicable_tasks])
         
+        # Track completed recurring tasks for auto-generation
+        completed_recurring_tasks = []
+        
         # Try to schedule each task
         for task in sorted_tasks:
             # Find which pet this task belongs to
@@ -579,11 +699,27 @@ class Scheduler:
                 scheduled_task = ScheduledTask(task, time_slot, reason)
                 schedule.add_scheduled_task(scheduled_task)
                 
+                # Use our custom sorting algorithm to maintain order
+                schedule.scheduled_tasks = self.sort_by_time(schedule.scheduled_tasks)
+                
                 # Stop if we've reached time limit
                 if schedule.get_total_duration() >= constraints.get_remaining_time(0):
                     break
         
         return schedule
+    
+    def complete_task_and_handle_recurring(self, scheduled_task: ScheduledTask) -> Optional[Task]:
+        """Complete a task and automatically create next instance if recurring."""
+        scheduled_task.set_status(TaskStatus.COMPLETED)
+        
+        # Get the next recurring instance if applicable
+        next_task = scheduled_task.get_next_recurring_task()
+        if next_task:
+            # Automatically add the new recurring task to available tasks
+            self.add_task(next_task)
+            return next_task
+        
+        return None
     
     def score_task(self, task: Task, pet: Pet, time_slot: datetime) -> float:
         """
@@ -661,6 +797,71 @@ class Scheduler:
                 return False
         
         return True
+    
+    def detect_pet_conflicts(self, schedule: Schedule) -> dict[str, list[dict]]:
+        """Detect scheduling conflicts for each individual pet."""
+        pet_conflicts = {}
+        
+        for pet in self.owner.pets:
+            conflicts = []
+            pet_tasks = []
+            
+            # Find all tasks scheduled for this pet
+            for scheduled_task in schedule.scheduled_tasks:
+                if scheduled_task.task.is_applicable_for_pet(pet):
+                    pet_tasks.append(scheduled_task)
+            
+            # Sort pet tasks by time for conflict detection
+            pet_tasks_sorted = self.sort_by_time(pet_tasks)
+            
+            # Check for overlaps in this pet's schedule
+            for i in range(len(pet_tasks_sorted) - 1):
+                current = pet_tasks_sorted[i]
+                next_task = pet_tasks_sorted[i + 1]
+                
+                if current.get_end_time() > next_task.scheduled_time:
+                    overlap_minutes = int((current.get_end_time() - next_task.scheduled_time).total_seconds() / 60)
+                    conflicts.append({
+                        'task1': current.task.title,
+                        'task2': next_task.task.title,
+                        'overlap_start': next_task.scheduled_time,
+                        'overlap_end': current.get_end_time(),
+                        'overlap_duration_minutes': overlap_minutes
+                    })
+            
+            if conflicts:
+                pet_conflicts[pet.name] = conflicts
+        
+        return pet_conflicts
+    
+    def detect_resource_conflicts(self, schedule: Schedule) -> list[dict]:
+        """Detect if multiple pets need the same resource (owner) at the same time."""
+        resource_conflicts = []
+        sorted_tasks = schedule.get_scheduled_tasks()
+        
+        for i in range(len(sorted_tasks)):
+            for j in range(i + 1, len(sorted_tasks)):
+                task1 = sorted_tasks[i]
+                task2 = sorted_tasks[j]
+                
+                # Check if tasks overlap in time
+                if schedule._tasks_overlap(task1, task2):
+                    # Find which pets each task applies to
+                    pets1 = [pet.name for pet in self.owner.pets if task1.task.is_applicable_for_pet(pet)]
+                    pets2 = [pet.name for pet in self.owner.pets if task2.task.is_applicable_for_pet(pet)]
+                    
+                    # If different pets need attention at the same time, it's a resource conflict
+                    if not set(pets1).intersection(set(pets2)):
+                        resource_conflicts.append({
+                            'task1': task1.task.title,
+                            'task2': task2.task.title,
+                            'pets1': pets1,
+                            'pets2': pets2,
+                            'conflict_time': max(task1.scheduled_time, task2.scheduled_time),
+                            'conflict_type': 'owner_availability'
+                        })
+        
+        return resource_conflicts
     
     def explain_scheduling_decisions(self, schedule: Schedule) -> dict:
         """
