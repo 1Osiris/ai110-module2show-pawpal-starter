@@ -2,6 +2,11 @@
 
 ## 1. System Design
 
+**Three Core Actions**
+- Add, track, and edit Tasks
+- Add and tack pets
+- have a dashboard that guides the user on the days tasks
+
 **a. Initial design**
 
 - Briefly describe your initial UML design.

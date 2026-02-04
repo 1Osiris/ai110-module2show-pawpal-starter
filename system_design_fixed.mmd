@@ -1,0 +1,219 @@
+classDiagram
+    %% Enums
+    class Priority {
+        <<enumeration>>
+        LOW
+        MEDIUM
+        HIGH
+        CRITICAL
+    }
+
+    class TaskStatus {
+        <<enumeration>>
+        PENDING
+        COMPLETED
+        SKIPPED
+        IN_PROGRESS
+    }
+
+    class TimeOfDay {
+        <<enumeration>>
+        EARLY_MORNING
+        MORNING
+        LATE_MORNING
+        AFTERNOON
+        EVENING
+        NIGHT
+    }
+
+    class EnergyLevel {
+        <<enumeration>>
+        VERY_LOW
+        LOW
+        MODERATE
+        HIGH
+        VERY_HIGH
+    }
+
+    class ActivityPreference {
+        <<enumeration>>
+        INDOOR_ONLY
+        OUTDOOR_PREFERRED
+        MIXED
+        SOCIAL
+        SOLITARY
+        GENTLE
+        ACTIVE
+    }
+
+    class MedicalCondition {
+        <<enumeration>>
+        ARTHRITIS
+        HIP_DYSPLASIA
+        HEART_CONDITION
+        DIABETES
+        ANXIETY
+        SENIOR_MOBILITY
+        RECOVERING_FROM_SURGERY
+        OVERWEIGHT
+        UNDERWEIGHT
+        MEDICATION_SCHEDULE
+        ALLERGIES
+    }
+
+    class TaskCategory {
+        <<enumeration>>
+        FEEDING
+        EXERCISE
+        GROOMING
+        MEDICAL
+        TRAINING
+        ENRICHMENT
+        SOCIAL
+        MAINTENANCE
+        GENERAL
+    }
+
+    %% Main Classes
+    class Pet {
+        -string name
+        -string species
+        -int age
+        -string breed
+        -dict preferences
+        -dict medical_conditions
+        +Pet(name, species, age, breed)
+        +add_preference(key, value)
+        +set_time_preference(activity, time)
+        +set_energy_level(energy)
+        +set_activity_preference(preference)
+        +get_preferences() dict
+        +add_medical_condition(condition, notes)
+        +has_medical_condition(condition) bool
+        +get_medical_conditions() dict
+        +__str__() string
+    }
+
+    class Owner {
+        -string name
+        -int available_time_minutes
+        -dict time_windows
+        -dict preferences
+        -list pets
+        +Owner(name, available_time_minutes)
+        +add_pet(pet)
+        +remove_pet(pet)
+        +get_pets() list
+        +set_time_window(start_time, end_time)
+        +get_available_time() int
+        +add_preference(key, value)
+        +get_preferences() dict
+        +__str__() string
+    }
+
+    class Task {
+        -string title
+        -int duration_minutes
+        -Priority priority
+        -TaskCategory category
+        -bool is_recurring
+        -int frequency_days
+        -dict requirements
+        -datetime last_completed
+        +Task(title, duration_minutes, priority, category)
+        +set_recurring(frequency_days)
+        +add_species_requirement(species)
+        +add_medical_restriction(condition)
+        +add_energy_requirement(min_energy)
+        +is_applicable_for_pet(pet) bool
+        +get_priority_score() int
+        +is_overdue() bool
+        +mark_completed()
+        +__str__() string
+    }
+
+    class ScheduledTask {
+        -Task task
+        -datetime scheduled_time
+        -int duration_minutes
+        -TaskStatus status
+        -string reason
+        +ScheduledTask(task, scheduled_time, reason)
+        +get_task() Task
+        +get_scheduled_time() datetime
+        +get_end_time() datetime
+        +set_status(status)
+        +get_status() TaskStatus
+        +get_reason() string
+        +__str__() string
+    }
+
+    class Schedule {
+        -datetime date
+        -list scheduled_tasks
+        -int total_duration_minutes
+        -dict metadata
+        +Schedule(date)
+        +add_scheduled_task(scheduled_task)
+        +remove_scheduled_task(scheduled_task)
+        +get_scheduled_tasks() list
+        +get_total_duration() int
+        +has_conflicts() bool
+        +get_free_time_slots() list
+        +get_schedule_summary() string
+        +__str__() string
+    }
+
+    class Scheduler {
+        -Owner owner
+        -list available_tasks
+        -dict scheduling_rules
+        -dict priority_weights
+        +Scheduler(owner)
+        +add_task(task)
+        +remove_task(task)
+        +set_scheduling_rule(rule_name, rule_func)
+        +set_priority_weight(priority, weight)
+        +generate_daily_schedule(date, constraints) Schedule
+        +score_task(task, pet, time_slot) float
+        +find_optimal_time_slot(task, constraints) datetime
+        +validate_schedule(schedule) bool
+        +explain_scheduling_decisions(schedule) dict
+        -filter_applicable_tasks(pet) list
+        -sort_tasks_by_priority(tasks) list
+        -check_time_constraints(task, time_slot, constraints) bool
+    }
+
+    class SchedulingConstraints {
+        -datetime start_time
+        -datetime end_time
+        -int max_total_duration
+        -list excluded_categories
+        -dict time_preferences
+        -bool allow_overlap
+        +SchedulingConstraints(start_time, end_time, max_total_duration)
+        +add_exclusion(category)
+        +set_time_preference(category, preferred_time)
+        +is_time_allowed(time_slot, category) bool
+        +get_remaining_time(current_duration) int
+        +__str__() string
+    }
+
+    %% Relationships between main classes
+    Owner "1" --> "*" Pet
+    Owner "1" --> "1" Scheduler
+    Scheduler "1" --> "*" Task
+    Scheduler "1" --> "1" Schedule
+    Schedule "1" --> "*" ScheduledTask
+    ScheduledTask "1" --> "1" Task
+    Task "*" --> "*" Pet
+    Scheduler "1" --> "1" SchedulingConstraints
+
+    %% Enum usage relationships
+    Task --> Priority : uses
+    Task --> TaskCategory : uses
+    ScheduledTask --> TaskStatus : uses
+    Pet --> TimeOfDay : preferences
+    Pet --> EnergyLevel : preferences
+    Pet --> ActivityPreference : preferences
+    Pet --> MedicalCondition : conditions
