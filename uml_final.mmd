@@ -129,6 +129,7 @@ classDiagram
         +get_priority_score() int
         +is_overdue() bool
         +mark_completed()
+        +_create_next_recurring_instance() Task
         +__str__() string
     }
 
@@ -143,6 +144,7 @@ classDiagram
         +get_scheduled_time() datetime
         +get_end_time() datetime
         +set_status(status)
+        +get_next_recurring_task() Task
         +get_status() TaskStatus
         +get_reason() string
         +__str__() string
@@ -159,8 +161,11 @@ classDiagram
         +get_scheduled_tasks() list
         +get_total_duration() int
         +has_conflicts() bool
+        +get_detailed_conflicts() list
         +get_free_time_slots() list
         +get_schedule_summary() string
+        +_tasks_overlap(task1, task2) bool
+        +_recalculate_duration()
         +__str__() string
     }
 
@@ -172,16 +177,27 @@ classDiagram
         +Scheduler(owner)
         +add_task(task)
         +remove_task(task)
+        +sort_by_time(scheduled_tasks) list
+        +filter_tasks_by_pet(pet, include_status) list
+        +filter_scheduled_tasks_by_status(schedule, status) list
+        +filter_tasks_by_category(category) list
+        +filter_tasks_by_priority(min_priority) list
         +set_scheduling_rule(rule_name, rule_func)
         +set_priority_weight(priority, weight)
         +generate_daily_schedule(date, constraints) Schedule
+        +complete_task_and_handle_recurring(scheduled_task) Task
         +score_task(task, pet, time_slot) float
-        +find_optimal_time_slot(task, constraints) datetime
+        +find_optimal_time_slot(task, constraints, current_schedule) datetime
         +validate_schedule(schedule) bool
+        +detect_pet_conflicts(schedule) dict
+        +detect_resource_conflicts(schedule) list
         +explain_scheduling_decisions(schedule) dict
-        -filter_applicable_tasks(pet) list
-        -sort_tasks_by_priority(tasks) list
-        -check_time_constraints(task, time_slot, constraints) bool
+        -_filter_applicable_tasks(pet) list
+        -_sort_tasks_by_priority(tasks) list
+        -_check_time_constraints(task, time_slot, constraints, schedule) bool
+        -_merge_by_time(left, right) list
+        -_generate_scheduling_reason(task, pet, time_slot) string
+        -_time_matches_preference(time_slot, preference) bool
     }
 
     class SchedulingConstraints {
@@ -196,18 +212,46 @@ classDiagram
         +set_time_preference(category, preferred_time)
         +is_time_allowed(time_slot, category) bool
         +get_remaining_time(current_duration) int
+        +_is_time_in_preference(time_slot, preference) bool
         +__str__() string
     }
 
     %% Relationships between main classes
-    Owner "1" --> "*" Pet
-    Owner "1" --> "1" Scheduler
-    Scheduler "1" --> "*" Task
-    Scheduler "1" --> "1" Schedule
-    Schedule "1" --> "*" ScheduledTask
-    ScheduledTask "1" --> "1" Task
-    Task "*" --> "*" Pet
-    Scheduler "1" --> "1" SchedulingConstraints
+    Owner "1" --> "*" Pet : owns
+    Owner "1" --> "1" Scheduler : uses
+    Scheduler "1" --> "*" Task : manages
+    Scheduler "1" --> "*" Schedule : creates
+    Scheduler "1" --> "1" SchedulingConstraints : uses
+    Schedule "1" *--> "*" ScheduledTask : contains
+    ScheduledTask "1" --> "1" Task : wraps
+    Task ..> Pet : <<applies to>>
+    Task "1" --> "0..1" Task : <<creates next recurring>>
+    
+    %% Dependencies and interactions
+    Scheduler ..> ScheduledTask : <<creates>>
+    Schedule ..> SchedulingConstraints : <<validates against>>
+
+    %% Algorithm and behavior notes
+    note for Scheduler "Core Scheduling Algorithm:
+    1. Filters applicable tasks per pet
+    2. Sorts by priority and overdue status
+    3. Uses merge sort for time-based sorting
+    4. Finds optimal time slots with scoring
+    5. Creates ScheduledTasks with reasons
+    6. Detects multiple conflict types
+    7. Handles recurring task automation"
+    
+    note for Task "Recurring Task Management:
+    - Automatically creates next instance
+    - Tracks overdue status
+    - Priority scoring with bonuses
+    - Multi-condition applicability checks"
+    
+    note for Schedule "Conflict Detection Types:
+    - Time overlap conflicts
+    - Pet-specific conflicts  
+    - Resource (owner) conflicts
+    - Free time slot calculation"
 
     %% Enum usage relationships
     Task --> Priority : uses
@@ -217,3 +261,5 @@ classDiagram
     Pet --> EnergyLevel : preferences
     Pet --> ActivityPreference : preferences
     Pet --> MedicalCondition : conditions
+    SchedulingConstraints --> TaskCategory : excludes/preferences
+    SchedulingConstraints --> TimeOfDay : preferences

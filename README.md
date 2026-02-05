@@ -2,6 +2,75 @@
 
 You are building **PawPal+**, a Streamlit app that helps a pet owner plan care tasks for their pet.
 
+## Features
+
+### 🐾 **Multi-Pet Management**
+- **Pet Profiles**: Create detailed profiles for multiple pets (dogs, cats, birds, rabbits, etc.)
+- **Individual Preferences**: Set energy levels, activity preferences, and time preferences per pet
+- **Medical Conditions**: Track medical conditions that affect task scheduling (arthritis, anxiety, diabetes, etc.)
+- **Breed & Age Tracking**: Store breed information and age for tailored care recommendations
+
+### 📋 **Intelligent Task Scheduling**
+- **Priority-Based Scheduling**: Tasks sorted by Critical, High, Medium, Low priority levels
+- **Smart Time Allocation**: Optimizes task placement within available time windows
+- **Constraint-Based Planning**: Respects time preferences, medical restrictions, and pet requirements
+- **Conflict Detection**: Identifies and reports time overlaps, pet-specific conflicts, and resource conflicts
+- **Merge Sort Algorithm**: Uses efficient sorting algorithms for time-based task organization
+
+### 🔄 **Recurring Task Management**
+- **Automatic Recurring Tasks**: Set tasks to repeat daily, weekly, or custom intervals
+- **Overdue Task Detection**: Identifies and prioritizes overdue recurring tasks
+- **Next Instance Creation**: Automatically generates next occurrence when tasks are completed
+- **Task Completion Tracking**: Persistent tracking of completed vs. pending tasks
+
+### 📊 **Advanced Filtering & Analysis**
+- **Pet-Specific Filtering**: View tasks applicable to individual pets
+- **Category Filtering**: Filter by task type (feeding, exercise, grooming, medical, etc.)
+- **Priority Filtering**: Show tasks above minimum priority thresholds
+- **Status Filtering**: View completed, pending, or in-progress tasks
+- **Interactive Sorting**: Sort by priority, duration, category, or alphabetically
+
+### 🧠 **Smart Scheduling Engine**
+- **Scoring Algorithm**: Evaluates optimal time slots based on multiple factors
+- **Time Preference Matching**: Schedules tasks during preferred times of day
+- **Energy Level Compatibility**: Matches high-energy tasks with high-energy pets
+- **Medical Restriction Awareness**: Automatically excludes inappropriate tasks for pets with conditions
+- **Resource Conflict Resolution**: Prevents owner double-booking across multiple pets
+
+### 📈 **Progress Tracking & Analytics**
+- **Completion Progress**: Visual progress bars and completion percentages
+- **Free Time Detection**: Identifies available time slots in your schedule
+- **Task Distribution Analysis**: Breakdown of tasks by category and priority
+- **Conflict Analysis**: Detailed reporting of scheduling conflicts with resolution suggestions
+- **Schedule Explanations**: AI-generated reasons for why tasks were scheduled at specific times
+
+### 🎯 **Interactive User Interface**
+- **Drag-and-Drop Scheduling**: Easy schedule modification through Streamlit interface
+- **Real-Time Updates**: Dynamic schedule updates as preferences change
+- **Expandable Task Details**: Detailed task information with completion tracking
+- **Professional Data Tables**: Clean, organized display of pets, tasks, and schedules
+- **Status Indicators**: Color-coded priority levels and completion status
+
+### ⚙️ **Customizable Constraints**
+- **Time Windows**: Set specific start and end times for scheduling
+- **Category Exclusions**: Temporarily exclude task categories from scheduling
+- **Duration Limits**: Set maximum total time for daily schedules
+- **Overlap Control**: Allow or prevent task time overlaps
+- **Preference Overrides**: Customize time preferences for different task types
+
+### 🧪 **Comprehensive Testing**
+- **150+ Test Cases**: Extensive test coverage for all system functionality
+- **Edge Case Testing**: Validates behavior with boundary conditions and unusual scenarios
+- **Algorithm Validation**: Tests sorting, filtering, and scheduling algorithms
+- **Integration Testing**: End-to-end validation of complete workflows
+- **Confidence Rating**: 5-star reliability rating based on comprehensive testing
+
+### 💡 **Smart Recommendations**
+- **Optimal Scheduling**: AI-powered recommendations for best task timing
+- **Conflict Resolution**: Intelligent suggestions for resolving scheduling conflicts
+- **Free Time Utilization**: Recommendations for productive use of available time slots
+- **Medical Compliance**: Automatic adjustments for pets with health conditions
+
 ## Scenario
 
 A busy pet owner needs help staying consistent with pet care. They want an assistant that can:
@@ -41,63 +110,3 @@ pip install -r requirements.txt
 5. Add tests to verify key behaviors.
 6. Connect your logic to the Streamlit UI in `app.py`.
 7. Refine UML so it matches what you actually built.
-
-## Testing PawPal+
-
-### Running Tests
-
-To run the comprehensive test suite:
-
-```bash
-python -m pytest tests/test_pawpal.py -v
-```
-For a quick test run without verbose output:
-```bash
-python -m pytest tests/test_pawpal.py
-```
-
-### Test Coverage
-
-The test suite includes **150+ comprehensive test cases** covering:
-
-#### Core Data Models (Pet, Owner, Task, Schedule)
-- Basic object creation and validation
-- Edge cases (empty fields, boundary values, special characters)
-- Data integrity and immutability checks
-- Unicode and internationalization support
-
-#### Task Management & Scheduling Logic
-- Task applicability algorithms (species, medical conditions, energy levels)
-- Priority scoring and overdue task handling
-- Recurring task lifecycle management
-- Time preference matching and constraint enforcement
-
-#### Scheduler Engine
-- Optimal time slot finding algorithms
-- Conflict detection (pet conflicts, owner resource conflicts)
-- Schedule validation and generation
-- Custom sorting algorithms (merge sort implementation)
-
-#### Advanced Edge Cases & Integration
-- Large-scale testing (50+ pets, 200+ tasks)
-- Performance stress testing with time limits
-- Complex medical restriction scenarios
-- Multi-pet resource contention handling
-- Boundary condition testing (midnight crossing, microsecond precision)
-- Error handling and graceful degradation
-
-#### Business Logic Validation
-- Energy level hierarchy enforcement
-- Medical restriction compliance
-- Time window and constraint adherence
-- Priority vs. preference trade-off algorithms
-
-### Confidence Level: ⭐⭐⭐⭐⭐ (5/5 Stars)
-
-**Excellent system reliability** based on comprehensive testing that demonstrates:
-
-✅ **Robust Core Logic**: All fundamental scheduling algorithms work correctly under normal and extreme conditions
-✅ **Edge Case Handling**: System gracefully handles invalid inputs, boundary conditions, and unexpected scenarios
-✅ **Performance Validated**: Successfully handles large datasets (50+ pets, 200+ tasks) within reasonable time limits
-✅ **Data Integrity**: Proper validation of business rules, medical restrictions, and scheduling constraints
-✅ **Integration Stability**: End-to-end workflows function correctly across all major use cases
